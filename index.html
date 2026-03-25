@@ -141,16 +141,26 @@
       if (e.key === 'Enter') addTodo();
     });
 
-    function addTodo() {
-      const text = input.value.trim();
-      if (!text) return;
+    function saveTodos() {
+      const todos = Array.from(list.querySelectorAll('li')).map(function(li) {
+        return {
+          text: li.querySelector('.text').textContent,
+          done: li.classList.contains('done')
+        };
+      });
+      localStorage.setItem('todos', JSON.stringify(todos));
+    }
 
+    function createItem(text, done) {
       const li = document.createElement('li');
+      if (done) li.classList.add('done');
 
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
+      checkbox.checked = done;
       checkbox.addEventListener('change', function() {
         li.classList.toggle('done', checkbox.checked);
+        saveTodos();
       });
 
       const span = document.createElement('span');
@@ -163,21 +173,34 @@
       btn.addEventListener('click', function() {
         li.remove();
         updateEmpty();
+        saveTodos();
       });
 
       li.appendChild(checkbox);
       li.appendChild(span);
       li.appendChild(btn);
-      list.appendChild(li);
+      return li;
+    }
 
+    function addTodo() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      list.appendChild(createItem(text, false));
       input.value = '';
       updateEmpty();
+      saveTodos();
     }
 
     function updateEmpty() {
       emptyMsg.style.display = list.children.length === 0 ? 'block' : 'none';
     }
 
+    // ページ読み込み時にローカルストレージから復元
+    const saved = JSON.parse(localStorage.getItem('todos') || '[]');
+    saved.forEach(function(todo) {
+      list.appendChild(createItem(todo.text, todo.done));
+    });
     updateEmpty();
   </script>
 </body>
