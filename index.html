@@ -119,6 +119,18 @@
       padding: 24px 0;
       font-size: 0.95rem;
     }
+
+    .storage-warn {
+      display: none;
+      margin-top: 20px;
+      padding: 12px 16px;
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      color: #7a6000;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
   </style>
 </head>
 <body>
@@ -130,25 +142,46 @@
     </div>
     <ul id="todoList"></ul>
     <p class="empty" id="emptyMsg">タスクはありません</p>
+    <p class="storage-warn" id="storageWarn">
+      ⚠️ このブラウザではローカルストレージが使用できないため、データは保存されません。<br>
+      Chrome または Firefox でファイルを開いてください。
+    </p>
   </div>
 
   <script>
     const input = document.getElementById('todoInput');
     const list  = document.getElementById('todoList');
     const emptyMsg = document.getElementById('emptyMsg');
+    const storageWarn = document.getElementById('storageWarn');
+
+    // localStorage が file:// で使えるか確認
+    let storageAvailable = false;
+    try {
+      localStorage.setItem('__test__', '1');
+      localStorage.removeItem('__test__');
+      storageAvailable = true;
+    } catch (e) {
+      storageWarn.style.display = 'block';
+    }
 
     input.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') addTodo();
     });
 
     function saveTodos() {
+      if (!storageAvailable) return;
       const todos = Array.from(list.querySelectorAll('li')).map(function(li) {
         return {
           text: li.querySelector('.text').textContent,
           done: li.classList.contains('done')
         };
       });
-      localStorage.setItem('todos', JSON.stringify(todos));
+      try {
+        localStorage.setItem('todos', JSON.stringify(todos));
+      } catch (e) {
+        storageAvailable = false;
+        storageWarn.style.display = 'block';
+      }
     }
 
     function createItem(text, done) {
@@ -197,7 +230,7 @@
     }
 
     // ページ読み込み時にローカルストレージから復元
-    const saved = JSON.parse(localStorage.getItem('todos') || '[]');
+    const saved = storageAvailable ? JSON.parse(localStorage.getItem('todos') || '[]') : [];
     saved.forEach(function(todo) {
       list.appendChild(createItem(todo.text, todo.done));
     });
